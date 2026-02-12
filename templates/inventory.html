@@ -1,0 +1,69 @@
+<!-- templates/inventory.html -->
+{% extends "base.html" %}
+
+{% block title %}库存清单{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <h2 class="mb-4">📦 库存清单</h2>
+
+    <!-- 搜索框 -->
+    <form method="GET" class="mb-4">
+        <div class="input-group">
+            <input type="text" class="form-control" name="search" placeholder="搜索设备名称或型号..." value="{{ search }}">
+            <button class="btn btn-outline-secondary" type="submit">🔍 搜索</button>
+            {% if search %}
+            <a href="{{ url_for('inventory') }}" class="btn btn-outline-secondary">✕ 清除</a>
+            {% endif %}
+        </div>
+    </form>
+
+    {% if items %}
+        <div class="row g-3">
+        {% for item in items %}
+            <div class="col-12">
+                <div class="card shadow-sm border">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h5 class="card-title mb-1 text-primary">{{ item.name }}</h5>
+                            <span class="badge bg-info">ID: {{ item.id }}</span>
+                        </div>
+
+                        <p class="mb-1"><strong>品牌：</strong>{{ item.brand }}</p>
+                        <p class="mb-1"><strong>型号：</strong>{{ item.model }}</p>
+                        <p class="mb-2">
+                            <strong>数量：</strong>
+                            <span class="badge {% if item.quantity == 0 %}bg-danger{% elif item.quantity <= 5 %}bg-warning{% else %}bg-success{% endif %}">
+                                {{ item.quantity }} 件
+                            </span>
+                        </p>
+
+                        {% if item.remark %}
+                        <p class="mb-2"><strong>备注：</strong>{{ item.remark }}</p>
+                        {% endif %}
+
+                        <div class="d-flex gap-2 mt-3">
+                            <a href="{{ url_for('edit', item_id=item.id) }}" class="btn btn-sm btn-outline-primary flex-grow-1">
+                                ✏️ 编辑
+                            </a>
+                            <a href="{{ url_for('stock_out') }}?prefill={{ item.name }}|{{ item.brand }}|{{ item.model }}"
+                               class="btn btn-sm btn-outline-danger flex-grow-1">
+                                📤 出库
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+        </div>
+    {% else %}
+        <div class="alert alert-info">
+            {% if search %}
+                🔍 未找到与 “{{ search }}” 相关的设备。
+            {% else %}
+                📭 当前无库存设备，请先 <a href="{{ url_for('stock_in') }}">入库</a>。
+            {% endif %}
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

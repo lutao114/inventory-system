@@ -1,0 +1,192 @@
+<!-- templates/out.html -->
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header bg-danger text-white">
+        <h4 class="mb-0"><i class="bi bi-arrow-up-circle me-2"></i>设备出库</h4>
+    </div>
+    <div class="card-body">
+        <form method="post" enctype="multipart/form-data">
+            <div class="row g-3">
+                <!-- 操作日期 -->
+                <div class="col-md-3">
+                    <label class="form-label">出库日期 *</label>
+                    <input type="date" name="operation_date" class="form-control" required>
+                </div>
+
+                <!-- 设备名称 -->
+                <div class="col-md-3">
+                    <label class="form-label">设备名称 *</label>
+                    <select name="name" id="name" class="form-select" required onchange="loadBrands()">
+                        <option value="">请选择</option>
+                    </select>
+                </div>
+
+                <!-- 品牌 -->
+                <div class="col-md-3">
+                    <label class="form-label">品牌 *</label>
+                    <select name="brand" id="brand" class="form-select" required disabled onchange="loadModels()">
+                        <option value="">请先选名称</option>
+                    </select>
+                </div>
+
+                <!-- 型号 -->
+                <div class="col-md-3">
+                    <label class="form-label">型号 *</label>
+                    <select name="model" id="model" class="form-select" required disabled onchange="loadItemInfo()">
+                        <option value="">请先选品牌</option>
+                    </select>
+                </div>
+
+                <!-- 库存提示（动态显示） -->
+                <div class="col-12" id="stock-info" style="display:none;">
+                    <div class="alert alert-info mb-0">
+                        当前库存：<strong id="stock-quantity">0</strong> 件
+                        <span id="stock-remark"></span>
+                    </div>
+                </div>
+
+                <!-- 数量 -->
+                <div class="col-md-3">
+                    <label class="form-label">出库数量 *</label>
+                    <input type="number" name="quantity" id="quantity" class="form-control" min="1" required>
+                </div>
+
+                <!-- 安装位置 -->
+                <div class="col-md-6">
+                    <label class="form-label">安装位置</label>
+                    <input type="text" name="install_location" class="form-control">
+                </div>
+
+                <!-- 备注 -->
+                <div class="col-12">
+                    <label class="form-label">备注</label>
+                    <textarea name="remark" class="form-control" rows="2"></textarea>
+                </div>
+
+                <!-- 照片 -->
+                <div class="col-12">
+                    <label class="form-label">现场照片（可选）</label>
+                    <input type="file" name="photo" class="form-control" accept="image/*">
+                </div>
+
+                <!-- 提交按钮 -->
+                <div class="col-12">
+                    <button type="submit" class="btn btn-danger">确认出库</button>
+                    <a href="{{ url_for('inventory') }}" class="btn btn-secondary">返回库存</a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+// 页面加载时获取所有设备名称
+document.addEventListener('DOMContentLoaded', function () {
+    const today = new Date().toISOString().split('T')[0];
+    document.querySelectorAll('input[type="date"]').forEach(el => {
+        if (!el.value) el.value = today;
+    });
+    fetchNames();
+});
+
+function fetchNames() {
+    fetch('/api/names')
+        .then(res => res.json())
+        .then(data => {
+            const select = document.getElementById('name');
+            select.innerHTML = '<option value="">请选择</option>';
+            data.names.forEach(name => {
+                const option = document.createElement('option');
+                option.value = name;
+                option.textContent = name;
+                select.appendChild(option);
+            });
+        })
+        .catch(err => console.error('Failed to load names:', err));
+}
+
+function loadBrands() {
+    const name = document.getElementById('name').value;
+    if (!name) return;
+
+    fetch(`/api/brands/${encodeURIComponent(name)}`)
+        .then(res => res.json())
+        .then(data => {
+            const select = document.getElementById('brand');
+            select.innerHTML = '<option value="">请选择</option>';
+            data.brands.forEach(brand => {
+                const option = document.createElement('option');
+                option.value = brand;
+                option.textContent = brand;
+                select.appendChild(option);
+            });
+            select.disabled = false;
+            // 重置后续
+            document.getElementById('model').innerHTML = '<option value="">请先选品牌</option>';
+            document.getElementById('model').disabled = true;
+            document.getElementById('stock-info').style.display = 'none';
+        })
+        .catch(err => console.error('Failed to load brands:', err));
+}
+
+function loadModels() {
+    const name = document.getElementById('name').value;
+    const brand = document.getElementById('brand').value;
+    if (!name || !brand) return;
+
+    fetch(`/api/models/${encodeURIComponent(name)}/${encodeURIComponent(brand)}`)
+        .then(res => res.json())
+        .then(data => {
+            const select = document.getElementById('model');
+            select.innerHTML = '<option value="">请选择</option>';
+            data.models.forEach(model => {
+                const option = document.createElement('option');
+                option.value = model;
+                option.textContent = model;
+                select.appendChild(option);
+            });
+            select.disabled = false;
+            document.getElementById('stock-info').style.display = 'none';
+        })
+        .catch(err => console.error('Failed to load models:', err));
+}
+
+function loadItemInfo() {
+    const name = document.getElementById('name').value;
+    const brand = document.getElementById('brand').value;
+    const model = document.getElementById('model').value;
+    if (!name || !brand || !model) return;
+
+    fetch(`/api/item/${encodeURIComponent(name)}/${encodeURIComponent(brand)}/${encodeURIComponent(model)}`)
+        .then(res => res.json())
+        .then(data => {
+            if (data.error) {
+                alert('设备信息异常');
+                return;
+            }
+            document.getElementById('stock-quantity').textContent = data.quantity;
+            const remarkEl = document.getElementById('stock-remark');
+            if (data.remark) {
+                remarkEl.textContent = '（备注：' + data.remark + '）';
+                remarkEl.style.display = 'inline';
+            } else {
+                remarkEl.style.display = 'none';
+            }
+            document.getElementById('stock-info').style.display = 'block';
+
+            // 限制最大出库数量
+            const qtyInput = document.getElementById('quantity');
+            qtyInput.max = data.quantity;
+            if (data.quantity <= 0) {
+                qtyInput.disabled = true;
+                alert('库存不足，无法出库！');
+            } else {
+                qtyInput.disabled = false;
+            }
+        })
+        .catch(err => console.error('Failed to load item info:', err));
+}
+</script>
+{% endblock %}

@@ -1,0 +1,17 @@
+# .gitignore
+__pycache__/
+*.pyc
+.env
+*.log
+.DS_Store
+Thumbs.db
+
+# 数据库（重要！不要提交真实数据）
+inventory.db
+
+# 上传文件
+uploads/*
+
+# 虚拟环境
+venv/
+env/
