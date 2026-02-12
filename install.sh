@@ -28,7 +28,7 @@ if [ -d ".git" ]; then
     sudo cp -r . "$INSTALL_DIR/"
 else
     # 从 GitHub 克隆（生产部署）
-    sudo -u "$USER" git clone https://github.com/你的用户名/inventory-system.git "$INSTALL_DIR"
+    sudo -u "$USER" git clone https://github.com/lutao114/inventory-system.git "$INSTALL_DIR"
 fi
 
 cd "$INSTALL_DIR"
@@ -95,4 +95,5 @@ sudo nginx -t && sudo systemctl reload nginx
 echo ""
 echo "🎉 部署成功！"
 echo "👉 访问 http://$(hostname -I | awk '{print $1}')"
+
 echo "📝 默认管理员账号请自行创建（通过注册页或手动插入数据库）"
